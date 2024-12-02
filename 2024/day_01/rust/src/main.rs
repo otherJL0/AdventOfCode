@@ -13,7 +13,7 @@ fn read_input() -> Vec<String> {
 
 fn parse_numbers(pairs: Vec<String>) -> (Vec<u32>, Vec<u32>) {
     let (mut left, mut right): (Vec<u32>, Vec<u32>) = pairs
-        .iter()
+        .into_iter()
         .map(|pair| {
             let mut nums = pair.split_whitespace();
             let left = nums
@@ -29,8 +29,8 @@ fn parse_numbers(pairs: Vec<String>) -> (Vec<u32>, Vec<u32>) {
             (left, right)
         })
         .unzip();
-    left.sort();
-    right.sort();
+    left.sort_unstable();
+    right.sort_unstable();
     (left, right)
 }
 
