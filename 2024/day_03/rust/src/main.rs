@@ -7,7 +7,7 @@ enum Token {
     LeftParen,
     RightParen,
     Comma,
-    Invalid,
+    Invalid(char),
     Do,
     Dont,
 }
@@ -45,7 +45,7 @@ fn tokenize(line: String) -> Vec<Token> {
                     tokens.push(Token::Dont);
                     index += 6;
                 } else {
-                    tokens.push(Token::Invalid);
+                    tokens.push(Token::Invalid(chars[index]));
                 }
             }
             digit if digit.is_ascii_digit() => {
@@ -63,7 +63,7 @@ fn tokenize(line: String) -> Vec<Token> {
                 tokens.push(Token::Number(value));
                 index = end - 1;
             }
-            _ => tokens.push(Token::Invalid),
+            _ => tokens.push(Token::Invalid(chars[index])),
         }
         index += 1;
     }
@@ -92,9 +92,39 @@ fn part_one(lines: Vec<String>) -> i32 {
         .sum()
 }
 
+fn part_two(lines: Vec<String>) -> i32 {
+    lines
+        .into_iter()
+        .map(|line| {
+            let mut result: i32 = 0;
+            let mut will_add = true;
+            let tokens = tokenize(line);
+            let mut index: usize = 0;
+            while index < tokens.len() {
+                match &tokens[index..] {
+                    [Token::Do, _rest @ ..] =>  will_add = true,
+                    [Token::Dont, _rest @ ..] =>  will_add = false,
+                    [Token::Mul, Token::LeftParen, Token::Number(a), Token::Comma, Token::Number(b), Token::RightParen, _rest @ ..] => {
+                        if will_add {
+                            result += a * b;
+                        }
+                        index += 5;
+                    }
+                    [_other, _rest @ ..] => (),
+                    [] => break,
+                }
+                index += 1;
+            }
+            result
+        })
+        .sum()
+}
+
 fn main() {
     let part_one_result = part_one(read_input());
     println!("{part_one_result}");
+    let part_two_result = part_two(read_input());
+    println!("{part_two_result}");
 }
 
 #[cfg(test)]
