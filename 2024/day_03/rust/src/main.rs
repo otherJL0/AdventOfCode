@@ -3,7 +3,7 @@ use std::fs;
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum Token {
     Mul,
-    Number(i32),
+    Number(u32),
     LeftParen,
     RightParen,
     Comma,
@@ -26,51 +26,63 @@ fn tokenize(line: String) -> Vec<Token> {
     let mut index: usize = 0;
     let chars: Vec<char> = line.chars().collect();
     while index < chars.len() {
-        let c = chars[index];
-        match c {
-            '(' => tokens.push(Token::LeftParen),
-            ')' => tokens.push(Token::RightParen),
-            ',' => tokens.push(Token::Comma),
-            alpha if alpha.is_ascii_alphabetic() => {
-                let is_mul = chars[index..=index + 2].iter().collect::<String>() == "mul";
-                let is_do = chars[index..=index + 3].iter().collect::<String>() == "do()";
-                let is_dont = chars[index..=index + 6].iter().collect::<String>() == "don't()";
-                if is_mul {
-                    tokens.push(Token::Mul);
-                    index += 2;
-                } else if is_do {
-                    tokens.push(Token::Do);
-                    index += 3;
-                } else if is_dont {
-                    tokens.push(Token::Dont);
-                    index += 6;
-                } else {
-                    tokens.push(Token::Invalid(chars[index]));
-                }
+        match &chars[index..] {
+            ['(', _rest @ ..] => {
+                tokens.push(Token::LeftParen);
+                index += 1;
             }
-            digit if digit.is_ascii_digit() => {
-                let start = index;
-                let mut end = index;
-                while end < chars.len() && chars[end].is_ascii_digit() {
-                    end += 1;
-                }
-                let value = chars[start..end]
-                    .iter()
-                    .collect::<String>()
-                    .as_str()
-                    .parse::<i32>()
-                    .unwrap();
-                tokens.push(Token::Number(value));
-                index = end - 1;
+            [')', _rest @ ..] => {
+                tokens.push(Token::RightParen);
+                index += 1;
             }
-            _ => tokens.push(Token::Invalid(chars[index])),
+            [',', _rest @ ..] => {
+                tokens.push(Token::Comma);
+                index += 1;
+            }
+            ['m', 'u', 'l', _rest @ ..] => {
+                tokens.push(Token::Mul);
+                index += 3;
+            }
+            ['d', 'o', '(', ')', _rest @ ..] => {
+                tokens.push(Token::Do);
+                index += 4;
+            }
+            ['d', 'o', 'n', '\'', 't', '(', ')', _rest @ ..] => {
+                tokens.push(Token::Dont);
+                index += 7;
+            }
+            [a, b, c, _rest @ ..]
+                if a.is_ascii_digit() && b.is_ascii_digit() && c.is_ascii_digit() =>
+            {
+                tokens.push(Token::Number(
+                    a.to_digit(10).unwrap() * 100
+                        + b.to_digit(10).unwrap() * 10
+                        + c.to_digit(10).unwrap(),
+                ));
+                index += 3;
+            }
+            [a, b, _rest @ ..] if a.is_ascii_digit() && b.is_ascii_digit() => {
+                tokens.push(Token::Number(
+                    a.to_digit(10).unwrap() * 10 + b.to_digit(10).unwrap(),
+                ));
+                index += 2;
+            }
+
+            [a, _rest @ ..] if a.is_ascii_digit() => {
+                tokens.push(Token::Number(a.to_digit(10).unwrap()));
+                index += 1;
+            }
+            [other, _rest @ ..] => {
+                tokens.push(Token::Invalid(*other));
+                index += 1;
+            }
+            [] => break,
         }
-        index += 1;
     }
     tokens
 }
 
-fn part_one(lines: Vec<String>) -> i32 {
+fn part_one(lines: Vec<String>) -> u32 {
     lines
         .into_iter()
         .map(|line| {
@@ -92,11 +104,11 @@ fn part_one(lines: Vec<String>) -> i32 {
         .sum()
 }
 
-fn part_two(lines: Vec<String>) -> i32 {
+fn part_two(lines: Vec<String>) -> u32 {
     lines
         .into_iter()
         .map(|line| {
-            let mut result: i32 = 0;
+            let mut result: u32 = 0;
             let mut will_add = true;
             let tokens = tokenize(line);
             let mut index: usize = 0;
