@@ -82,56 +82,36 @@ fn tokenize(line: String) -> Vec<Token> {
     tokens
 }
 
-fn part_one(lines: Vec<String>) -> u32 {
-    lines
-        .into_iter()
-        .map(|line| {
-            let mut result = 0;
-            for window in tokenize(line).windows(6) {
-                if window[0] == Token::Mul
-                    && window[1] == Token::LeftParen
-                    && window[3] == Token::Comma
-                    && window[5] == Token::RightParen
-                {
-                    match (window[2], window[4]) {
-                        (Token::Number(a), Token::Number(b)) => result += a * b,
-                        _ => continue,
-                    }
-                }
-            }
-            result
-        })
-        .sum()
+fn part_one(tokens: &[Token]) -> u32 {
+    tokens.windows(6).filter_map(|window| match window {
+        [Token::Mul, Token::LeftParen, Token::Number(a), Token::Comma, Token::Number(b), Token::RightParen] => Some(a * b),
+        _ => None,
+    }).sum()
 }
 
-fn part_two(lines: Vec<String>) -> u32 {
+fn part_two(tokens: &[Token]) -> u32 {
     let mut result: u32 = 0;
     let mut will_add = true;
-    let tokens = tokenize(lines.into_iter().collect());
-    let mut index: usize = 0;
-    while index < tokens.len() {
-        match &tokens[index..] {
-            [Token::Do, _rest @ ..] => will_add = true,
-            [Token::Dont, _rest @ ..] => will_add = false,
-            [Token::Mul, Token::LeftParen, Token::Number(a), Token::Comma, Token::Number(b), Token::RightParen, _rest @ ..] =>
-            {
-                if will_add {
-                    result += a * b;
-                }
-                index += 5;
-            }
-            [_other, _rest @ ..] => (),
-            [] => break,
+
+    tokens.windows(6).for_each(|window| {
+        match window {
+            [Token::Do, ..] => will_add = true,
+            [Token::Dont, ..] => will_add = false,
+            [Token::Mul, Token::LeftParen, Token::Number(a), Token::Comma, Token::Number(b), Token::RightParen] => if will_add {result += a * b},
+            _ => {},
         }
-        index += 1;
-    }
+    });
     result
 }
 
 fn main() {
-    let part_one_result = part_one(read_input());
+    let input = read_input();
+    let tokens = tokenize(input.into_iter().collect());
+
+    let part_one_result = part_one(&tokens);
     println!("{part_one_result}");
-    let part_two_result = part_two(read_input());
+
+    let part_two_result = part_two(&tokens);
     println!("{part_two_result}");
 }
 
@@ -140,7 +120,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn valid_expr() {
+    fn _expr() {
         let input = String::from("mul(1,10)");
         let expected = vec![
             Token::Mul,
