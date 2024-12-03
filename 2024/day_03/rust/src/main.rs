@@ -8,6 +8,8 @@ enum Token {
     RightParen,
     Comma,
     Invalid,
+    Do,
+    Dont,
 }
 
 fn read_input() -> Vec<String> {
@@ -30,13 +32,18 @@ fn tokenize(line: String) -> Vec<Token> {
             ')' => tokens.push(Token::RightParen),
             ',' => tokens.push(Token::Comma),
             alpha if alpha.is_ascii_alphabetic() => {
-                if alpha == 'm'
-                    && index + 2 < chars.len()
-                    && chars[index + 1] == 'u'
-                    && chars[index + 2] == 'l'
-                {
+                let is_mul = chars[index..=index + 2].iter().collect::<String>() == "mul";
+                let is_do = chars[index..=index + 3].iter().collect::<String>() == "do()";
+                let is_dont = chars[index..=index + 6].iter().collect::<String>() == "don't()";
+                if is_mul {
                     tokens.push(Token::Mul);
                     index += 2;
+                } else if is_do {
+                    tokens.push(Token::Do);
+                    index += 3;
+                } else if is_dont {
+                    tokens.push(Token::Dont);
+                    index += 6;
                 } else {
                     tokens.push(Token::Invalid);
                 }
@@ -63,27 +70,25 @@ fn tokenize(line: String) -> Vec<Token> {
     tokens
 }
 
-fn extract_mul_instructions(tokens: Vec<Token>) -> i32 {
-    let mut result = 0;
-    for window in tokens.windows(6) {
-        if window[0] == Token::Mul
-            && window[1] == Token::LeftParen
-            && window[3] == Token::Comma
-            && window[5] == Token::RightParen
-        {
-            match (window[2], window[4]) {
-                (Token::Number(a), Token::Number(b)) => result += a * b,
-                _ => continue,
-            }
-        }
-    }
-    result
-}
-
 fn part_one(lines: Vec<String>) -> i32 {
     lines
         .into_iter()
-        .map(|line| extract_mul_instructions(tokenize(line)))
+        .map(|line| {
+            let mut result = 0;
+            for window in tokenize(line).windows(6) {
+                if window[0] == Token::Mul
+                    && window[1] == Token::LeftParen
+                    && window[3] == Token::Comma
+                    && window[5] == Token::RightParen
+                {
+                    match (window[2], window[4]) {
+                        (Token::Number(a), Token::Number(b)) => result += a * b,
+                        _ => continue,
+                    }
+                }
+            }
+            result
+        })
         .sum()
 }
 
@@ -100,6 +105,38 @@ mod tests {
     fn valid_expr() {
         let input = String::from("mul(1,10)");
         let expected = vec![
+            Token::Mul,
+            Token::LeftParen,
+            Token::Number(1),
+            Token::Comma,
+            Token::Number(10),
+            Token::RightParen,
+        ];
+        let actual = tokenize(input);
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn valid_expr_with_do() {
+        let input = String::from("do()mul(1,10)");
+        let expected = vec![
+            Token::Do,
+            Token::Mul,
+            Token::LeftParen,
+            Token::Number(1),
+            Token::Comma,
+            Token::Number(10),
+            Token::RightParen,
+        ];
+        let actual = tokenize(input);
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn valid_expr_with_dont() {
+        let input = String::from("don't()mul(1,10)");
+        let expected = vec![
+            Token::Dont,
             Token::Mul,
             Token::LeftParen,
             Token::Number(1),
