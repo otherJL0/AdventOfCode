@@ -105,31 +105,27 @@ fn part_one(lines: Vec<String>) -> u32 {
 }
 
 fn part_two(lines: Vec<String>) -> u32 {
-    lines
-        .into_iter()
-        .map(|line| {
-            let mut result: u32 = 0;
-            let mut will_add = true;
-            let tokens = tokenize(line);
-            let mut index: usize = 0;
-            while index < tokens.len() {
-                match &tokens[index..] {
-                    [Token::Do, _rest @ ..] =>  will_add = true,
-                    [Token::Dont, _rest @ ..] =>  will_add = false,
-                    [Token::Mul, Token::LeftParen, Token::Number(a), Token::Comma, Token::Number(b), Token::RightParen, _rest @ ..] => {
-                        if will_add {
-                            result += a * b;
-                        }
-                        index += 5;
-                    }
-                    [_other, _rest @ ..] => (),
-                    [] => break,
+    let mut result: u32 = 0;
+    let mut will_add = true;
+    let tokens = tokenize(lines.into_iter().collect());
+    let mut index: usize = 0;
+    while index < tokens.len() {
+        match &tokens[index..] {
+            [Token::Do, _rest @ ..] => will_add = true,
+            [Token::Dont, _rest @ ..] => will_add = false,
+            [Token::Mul, Token::LeftParen, Token::Number(a), Token::Comma, Token::Number(b), Token::RightParen, _rest @ ..] =>
+            {
+                if will_add {
+                    result += a * b;
                 }
-                index += 1;
+                index += 5;
             }
-            result
-        })
-        .sum()
+            [_other, _rest @ ..] => (),
+            [] => break,
+        }
+        index += 1;
+    }
+    result
 }
 
 fn main() {
